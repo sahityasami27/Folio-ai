@@ -1,65 +1,236 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
 
 export default function Home() {
+  const [script, setScript] = useState("");
+  const [genre, setGenre] = useState("Drama");
+  const [tone, setTone] = useState("Dramatic");
+  const [output, setOutput] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ script, genre, tone }), // ✅ tone added
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        setOutput(null);
+      } else {
+        setOutput(data);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Network error. Try again.");
+      setOutput(null);
+    }
+
+    setLoading(false);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="h-screen flex text-black bg-white">
+      
+      {/* LEFT PANEL */}
+      <div className="w-1/2 p-6 border-r flex flex-col">
+        <h1 className="text-2xl font-bold mb-2">Folio</h1>
+        <p className="text-sm text-gray-600 mb-4">
+          AI metadata generator for audio storytelling
+        </p>
+
+        <select
+          className="mb-4 p-2 border rounded"
+          value={genre}
+          onChange={(e) => setGenre(e.target.value)}
+        >
+          <option>Drama</option>
+          <option>Romance</option>
+          <option>Fantasy</option>
+          <option>Crime/Thriller</option>
+          <option>Romantasy</option>
+        </select>
+
+        <select
+          className="mb-4 p-2 border rounded"
+          value={tone}
+          onChange={(e) => setTone(e.target.value)}
+        >
+          <option>Dramatic</option>
+          <option>Dark</option>
+          <option>Emotional</option>
+          <option>Youthful</option>
+        </select>
+
+        <textarea
+          className="flex-1 p-3 border rounded"
+          placeholder="Paste your episode script here..."
+          value={script}
+          onChange={(e) => setScript(e.target.value)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+        <button
+          onClick={handleGenerate}
+          disabled={!script || loading}
+          className="mt-4 bg-black text-white py-2 rounded disabled:opacity-50"
+        >
+          {loading ? "Generating..." : "Generate"}
+        </button>
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div className="w-1/2 p-6 overflow-y-auto">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Output</h2>
+
+          {output && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleGenerate}
+                className="px-3 py-1 border border-black rounded text-sm hover:bg-black hover:text-white transition"
+              >
+                Regenerate
+              </button>
+
+              <button
+                onClick={() =>
+                  navigator.clipboard.writeText(JSON.stringify(output, null, 2))
+                }
+                className="px-3 py-1 border border-black rounded text-sm hover:bg-black hover:text-white transition"
+              >
+                Copy All
+              </button>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+        )}
+
+        {loading && (
+          <p className="text-sm text-gray-500 mb-4">
+            Generating insights...
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        )}
+
+        {output ? (
+          <div className="space-y-6">
+
+            {/* Titles */}
+            <div>
+              <h3 className="font-semibold mb-2">Title Options</h3>
+              <div className="flex flex-wrap gap-2">
+                {output.title_options?.map((t: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1 bg-gray-200 rounded-full text-sm"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <h3 className="font-semibold mb-2 flex justify-between">
+                Description
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(output.description)
+                  }
+                  className="text-xs border px-2 py-1 rounded hover:bg-black hover:text-white transition"
+                >
+                  Copy
+                </button>
+              </h3>
+              <p className="text-sm">{output.description}</p>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <h3 className="font-semibold mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {output.tags?.map((tag: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 bg-black text-white text-xs rounded"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Mood */}
+            <div>
+              <h3 className="font-semibold mb-2">Mood</h3>
+              <div className="flex flex-wrap gap-2">
+                {output.mood_markers?.map((m: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 bg-purple-200 text-xs rounded"
+                  >
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Hook */}
+            <div>
+              <h3 className="font-semibold mb-2 flex justify-between">
+                Hook
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(output.hook_line)
+                  }
+                  className="text-xs border px-2 py-1 rounded hover:bg-black hover:text-white transition"
+                >
+                  Copy
+                </button>
+              </h3>
+              <p className="italic text-sm">"{output.hook_line}"</p>
+            </div>
+
+            {/* Cliffhanger */}
+            <div>
+              <h3 className="font-semibold mb-2 flex justify-between">
+                Cliffhanger
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(output.cliffhanger_summary)
+                  }
+                  className="text-xs border px-2 py-1 rounded hover:bg-black hover:text-white transition"
+                >
+                  Copy
+                </button>
+              </h3>
+              <p className="text-sm">{output.cliffhanger_summary}</p>
+            </div>
+
+          </div>
+        ) : (
+          !loading && (
+            <p className="text-gray-400 text-sm">
+              Paste a script and click Generate to see AI-powered metadata.
+            </p>
+          )
+        )}
+      </div>
+    </main>
   );
 }
